@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-gladiator-arena.local/schemas/match-state-v1.schema.json",
+  "title": "Gladiator match state v1",
+  "type": "object",
+  "required": ["schema", "round", "gridSize", "fighters"],
+  "properties": {
+    "schema": { "const": 1 },
+    "round": { "type": "integer", "minimum": 1 },
+    "gridSize": { "const": 7 },
+    "fighters": {
+      "type": "object",
+      "required": ["A", "B"],
+      "properties": { "A": { "$ref": "#/$defs/fighter" }, "B": { "$ref": "#/$defs/fighter" } },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "fighter": {
+      "type": "object",
+      "required": ["hp", "position", "cooldowns", "effects", "usedHeal"],
+      "properties": {
+        "hp": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "position": { "type": "object", "required": ["x", "y"], "properties": { "x": { "type": "integer", "minimum": 0, "maximum": 6 }, "y": { "type": "integer", "minimum": 0, "maximum": 6 } }, "additionalProperties": false },
+        "cooldowns": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "effects": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "usedHeal": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

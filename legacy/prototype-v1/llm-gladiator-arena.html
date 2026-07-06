@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LLM Gladiator Arena</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #374151;
+      --good: #34d399;
+      --bad: #fb7185;
+      --warn: #fbbf24;
+      --accent: #60a5fa;
+      --a: #38bdf8;
+      --b: #f472b6;
+      --cell: #172033;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, var(--bg) 52%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 28px 18px 14px;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 6px; font-size: clamp(28px, 5vw, 48px); letter-spacing: -0.04em; }
+    p { color: var(--muted); line-height: 1.5; }
+    main {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 12px 18px 60px;
+      display: grid;
+      gap: 16px;
+    }
+    .row { display: grid; gap: 16px; }
+    @media (min-width: 980px) {
+      .row.two { grid-template-columns: 1fr 1fr; }
+      .row.arena { grid-template-columns: 420px 1fr; align-items: start; }
+    }
+    .card {
+      background: rgba(17, 24, 39, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .card h2, .card h3 { margin: 0 0 10px; letter-spacing: -0.02em; }
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      resize: vertical;
+      background: #030712;
+      color: #d1fae5;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
+      font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(96,165,250,.18); }
+    button {
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .04s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover { background: #26354d; border-color: #64748b; }
+    button:active { transform: translateY(1px); }
+    button.primary { background: linear-gradient(135deg, #2563eb, #7c3aed); border: 0; }
+    button.good { background: rgba(16,185,129,.18); border-color: rgba(16,185,129,.45); }
+    button.warn { background: rgba(245,158,11,.14); border-color: rgba(245,158,11,.45); }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0 0; }
+    .small { font-size: 13px; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #0b1220; border-radius: 999px; padding: 6px 10px; font-size: 13px; color: var(--muted); }
+    .status { display: grid; gap: 10px; margin-bottom: 12px; }
+    .fighterStatus { display: grid; grid-template-columns: 42px 1fr 52px; gap: 10px; align-items: center; }
+    .badge { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font-weight: 900; color: #031018; }
+    .badge.a { background: var(--a); }
+    .badge.b { background: var(--b); }
+    .barWrap { background: #030712; border: 1px solid #334155; border-radius: 999px; height: 14px; overflow: hidden; }
+    .bar { height: 100%; width: 100%; background: var(--good); transition: width .2s ease; }
+    .arenaGrid {
+      display: grid;
+      gap: 5px;
+      width: min(100%, 390px);
+      margin: 12px auto;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #07101f;
+    }
+    .cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      background: var(--cell);
+      border: 1px solid rgba(148,163,184,.16);
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      font-weight: 900;
+    }
+    .cell.center::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.18);
+    }
+    .token {
+      width: 68%;
+      height: 68%;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: clamp(14px, 3vw, 20px);
+      color: #031018;
+      box-shadow: 0 4px 18px rgba(0,0,0,.35);
+    }
+    .token.a { background: var(--a); }
+    .token.b { background: var(--b); }
+    .token.both { background: linear-gradient(135deg, var(--a) 0 49%, var(--b) 50% 100%); }
+    .eventList {
+      background: #030712;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 420px;
+      overflow: auto;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+    }
+    .errors { border-color: rgba(251,113,133,.5); color: #fecdd3; }
+    .ok { color: #bbf7d0; }
+    .muted { color: var(--muted); }
+    details { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: rgba(15,23,42,.65); }
+    summary { cursor: pointer; font-weight: 800; }
+    code { color: #bfdbfe; }
+    .copied { color: #bbf7d0; font-weight: 700; }
+    input[type="number"] {
+      background: #030712;
+      border: 1px solid #334155;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LLM Gladiator Arena</h1>
+    <p>Paste two LLM-written battle plans. The app simulates a deterministic top-down duel, shows a replay, validates bad JSON, and gives you copyable logs for the next round.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Rules chosen for v1</h2>
+      <div class="toolbar">
+        <span class="pill">7×7 grid</span>
+        <span class="pill">12 ticks per round</span>
+        <span class="pill">100 HP each</span>
+        <span class="pill">No randomness</span>
+        <span class="pill">Invalid actions become idle</span>
+        <span class="pill">HP carries between rounds</span>
+      </div>
+      <details style="margin-top:12px;">
+        <summary>Open full combat rules</summary>
+        <p><strong>Tick order:</strong> validate input → apply snare → resolve movement/dash → resolve block/duck/shield → resolve attacks/spells → apply damage → check defeat.</p>
+        <p><strong>Collision:</strong> fighters cannot leave the grid. If both move into the same square or swap squares in the same tick, both bounce back to their previous positions. Blink cannot land on the enemy.</p>
+        <p><strong>Actions:</strong> <code>move</code>, <code>dash</code>, <code>attack</code>, <code>block</code>, <code>duck</code>, <code>cast</code>, <code>idle</code>. Directions are <code>up</code>, <code>down</code>, <code>left</code>, <code>right</code>.</p>
+        <p><strong>Melee:</strong> <code>attack</code> hits one adjacent square in the chosen direction for 18 damage.</p>
+        <p><strong>Defence:</strong> <code>block</code> halves incoming melee damage this tick. <code>duck</code> avoids firebolt this tick, but does not avoid melee.</p>
+        <p><strong>Spells:</strong> <code>firebolt</code> range 4 line damage 22, cooldown 3. <code>blink</code> teleports 2 squares, cooldown 4. <code>shield</code> halves all incoming damage this tick and next tick, cooldown 4. <code>snare</code> range 3 line; target cannot move next tick, cooldown 4. <code>heal</code> restores 15 HP, once per fighter per match.</p>
+        <p><strong>Win:</strong> destroy the other fighter. If both drop to 0 HP in the same tick, it is a draw. If both survive the round, the leader is the fighter with more HP, but the match continues unless you reset.</p>
+      </details>
+    </section>
+
+    <section class="row two">
+      <div class="card">
+        <h2>Fighter A plan</h2>
+        <textarea id="planA" spellcheck="false"></textarea>
+        <div class="toolbar">
+          <button id="sampleA">Load sample A</button>
+          <button id="clearA">Clear</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Fighter B plan</h2>
+        <textarea id="planB" spellcheck="false"></textarea>
+        <div class="toolbar">
+          <button id="sampleB">Load sample B</button>
+          <button id="clearB">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Round state</h2>
+      <p class="small">This lets HP and positions carry into the next planning round. Use “Carry final state” after a simulation to continue the match.</p>
+      <textarea id="stateText" spellcheck="false" style="min-height:150px;"></textarea>
+      <div class="toolbar">
+        <button id="resetState">Reset match</button>
+        <button id="carryState" class="good" disabled>Carry final state into next round</button>
+        <label class="pill">Round <input id="roundInput" type="number" min="1" value="1" /></label>
+        <button id="simulate" class="primary">Simulate round</button>
+      </div>
+    </section>
+
+    <section id="validationCard" class="card" style="display:none;">
+      <h2>Validation</h2>
+      <div id="validationOutput" class="eventList"></div>
+    </section>
+
+    <section class="row arena">
+      <div class="card">
+        <h2>Replay</h2>
+        <div class="status">
+          <div class="fighterStatus">
+            <div class="badge a">A</div>
+            <div><strong id="nameA">Fighter A</strong><div class="barWrap"><div id="hpBarA" class="bar"></div></div></div>
+            <div id="hpA">100</div>
+          </div>
+          <div class="fighterStatus">
+            <div class="badge b">B</div>
+            <div><strong id="nameB">Fighter B</strong><div class="barWrap"><div id="hpBarB" class="bar"></div></div></div>
+            <div id="hpB">100</div>
+          </div>
+        </div>
+        <div id="arenaGrid" class="arenaGrid"></div>
+        <div class="toolbar" style="justify-content:center;">
+          <button id="prevTick">← Prev</button>
+          <span class="pill" id="tickLabel">No battle yet</span>
+          <button id="nextTick">Next →</button>
+        </div>
+        <div class="toolbar" style="justify-content:center;">
+          <button id="playPause">Play</button>
+          <button id="toStart">Start</button>
+          <button id="toEnd">End</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Battle log</h2>
+        <div id="resultLine" class="pill">Simulate to begin.</div>
+        <div id="battleLog" class="eventList" style="margin-top:12px;">No events yet.</div>
+        <div class="toolbar">
+          <button id="copyA" disabled>Copy prompt/log for Fighter A</button>
+          <button id="copyB" disabled>Copy prompt/log for Fighter B</button>
+          <button id="copyPublic" disabled>Copy public log only</button>
+          <span id="copyStatus" class="small"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Prompt to give each LLM combatant</h2>
+      <p class="small">Use this to get valid JSON from each model. After each round, use the copy buttons above instead, because they include the log and current state.</p>
+      <div id="basePrompt" class="eventList"></div>
+      <div class="toolbar"><button id="copyBasePrompt">Copy base prompt</button></div>
+    </section>
+  </main>
+
+  <script>
+    const CONFIG = {
+      schema: 1,
+      gridSize: 7,
+      maxTicks: 12,
+      maxHp: 100,
+      meleeDamage: 18,
+      spells: {
+        firebolt: { range: 4, damage: 22, cooldown: 3, description: "Line spell. Duck avoids it." },
+        blink: { range: 2, cooldown: 4, description: "Teleport 2 squares in a direction if landing square is free." },
+        shield: { duration: 2, cooldown: 4, description: "Halves all incoming damage this tick and next tick." },
+        snare: { range: 3, cooldown: 4, description: "Line spell. Target cannot move next tick." },
+        heal: { amount: 15, cooldown: 999, once: true, description: "Restore 15 HP once per match." }
+      }
+    };
+
+    const DIRS = {
+      up: [0, -1],
+      down: [0, 1],
+      left: [-1, 0],
+      right: [1, 0]
+    };
+
+    const SAMPLE_A = {
+      schema: 1,
+      fighter_name: "Iron Psalm",
+      strategy: "Close carefully, shield if threatened, then strike in melee.",
+      actions: [
+        { tick: 1, action: "move", direction: "right" },
+        { tick: 2, action: "move", direction: "right" },
+        { tick: 3, action: "cast", spell: "shield" },
+        { tick: 4, action: "attack", direction: "right" },
+        { tick: 5, action: "cast", spell: "firebolt", direction: "right" },
+        { tick: 6, action: "duck" },
+        { tick: 7, action: "move", direction: "up" },
+        { tick: 8, action: "cast", spell: "snare", direction: "right" },
+        { tick: 9, action: "dash", direction: "right" },
+        { tick: 10, action: "attack", direction: "right" },
+        { tick: 11, action: "cast", spell: "heal" },
+        { tick: 12, action: "attack", direction: "right" }
+      ]
+    };
+
+    const SAMPLE_B = {
+      schema: 1,
+      fighter_name: "Glass Wyrm",
+      strategy: "Keep distance, punish straight approaches, and duck expected firebolts.",
+      actions: [
+        { tick: 1, action: "cast", spell: "firebolt", direction: "left" },
+        { tick: 2, action: "move", direction: "up" },
+        { tick: 3, action: "duck" },
+        { tick: 4, action: "cast", spell: "snare", direction: "left" },
+        { tick: 5, action: "move", direction: "left" },
+        { tick: 6, action: "cast", spell: "shield" },
+        { tick: 7, action: "attack", direction: "left" },
+        { tick: 8, action: "cast", spell: "blink", direction: "down" },
+        { tick: 9, action: "cast", spell: "firebolt", direction: "left" },
+        { tick: 10, action: "block" },
+        { tick: 11, action: "move", direction: "left" },
+        { tick: 12, action: "attack", direction: "left" }
+      ]
+    };
+
+    const DEFAULT_STATE = {
+      schema: 1,
+      round: 1,
+      gridSize: 7,
+      fighters: {
+        A: { hp: 100, position: { x: 1, y: 3 }, cooldowns: {}, effects: {}, usedHeal: false },
+        B: { hp: 100, position: { x: 5, y: 3 }, cooldowns: {}, effects: {}, usedHeal: false }
+      }
+    };
+
+    let lastResult = null;
+    let currentFrame = 0;
+    let playTimer = null;
+
+    const els = {
+      planA: document.getElementById("planA"),
+      planB: document.getElementById("planB"),
+      stateText: document.getElementById("stateText"),
+      roundInput: document.getElementById("roundInput"),
+      grid: document.getElementById("arenaGrid"),
+      validationCard: document.getElementById("validationCard"),
+      validationOutput: document.getElementById("validationOutput"),
+      battleLog: document.getElementById("battleLog"),
+      resultLine: document.getElementById("resultLine"),
+      tickLabel: document.getElementById("tickLabel"),
+      nameA: document.getElementById("nameA"),
+      nameB: document.getElementById("nameB"),
+      hpA: document.getElementById("hpA"),
+      hpB: document.getElementById("hpB"),
+      hpBarA: document.getElementById("hpBarA"),
+      hpBarB: document.getElementById("hpBarB"),
+      copyStatus: document.getElementById("copyStatus"),
+      basePrompt: document.getElementById("basePrompt")
+    };
+
+    function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+    function pretty(obj) { return JSON.stringify(obj, null, 2); }
+    function inBounds(pos, gridSize) { return pos.x >= 0 && pos.y >= 0 && pos.x < gridSize && pos.y < gridSize; }
+    function samePos(a, b) { return a.x === b.x && a.y === b.y; }
+    function addDir(pos, dir, steps = 1) { const d = DIRS[dir]; return { x: pos.x + d[0] * steps, y: pos.y + d[1] * steps }; }
+    function manhattan(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+    function hpColor(hp) { return hp <= 25 ? "var(--bad)" : hp <= 55 ? "var(--warn)" : "var(--good)"; }
+
+    function parseJson(text, label) {
+      try { return { value: JSON.parse(text), errors: [] }; }
+      catch (err) { return { value: null, errors: [`${label}: invalid JSON - ${err.message}`] }; }
+    }
+
+    function normalisePlan(raw, label) {
+      const errors = [];
+      const warnings = [];
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { plan: { fighter_name: label, actions: [] }, errors: [`${label}: plan must be a JSON object.`], warnings };
+      if (raw.schema !== 1) warnings.push(`${label}: expected schema 1. Continuing anyway.`);
+      const fighter_name = typeof raw.fighter_name === "string" && raw.fighter_name.trim() ? raw.fighter_name.trim().slice(0, 40) : label;
+      const actionsRaw = Array.isArray(raw.actions) ? raw.actions : [];
+      if (!Array.isArray(raw.actions)) warnings.push(`${label}: missing actions array. Fighter will idle.`);
+      const actions = [];
+      const seen = new Set();
+      for (const item of actionsRaw) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          warnings.push(`${label}: ignored a non-object action.`);
+          continue;
+        }
+        const tick = Number(item.tick);
+        if (!Number.isInteger(tick) || tick < 1 || tick > CONFIG.maxTicks) {
+          warnings.push(`${label}: ignored action with invalid tick '${item.tick}'. Ticks must be 1-${CONFIG.maxTicks}.`);
+          continue;
+        }
+        if (seen.has(tick)) warnings.push(`${label}: duplicate tick ${tick}. Last action wins.`);
+        seen.add(tick);
+        actions[tick] = normaliseAction(item, `${label} tick ${tick}`, warnings);
+      }
+      for (let t = 1; t <= CONFIG.maxTicks; t++) {
+        if (!actions[t]) actions[t] = { action: "idle", source: { tick: t, action: "idle" } };
+      }
+      return { plan: { fighter_name, strategy: raw.strategy || "", actions }, errors, warnings };
+    }
+
+    function normaliseAction(item, context, warnings) {
+      const validActions = ["move", "dash", "attack", "block", "duck", "cast", "idle"];
+      let action = typeof item.action === "string" ? item.action.toLowerCase() : "idle";
+      if (!validActions.includes(action)) {
+        warnings.push(`${context}: invalid action '${item.action}'. Treated as idle.`);
+        return { action: "idle", source: item };
+      }
+      if (["move", "dash", "attack"].includes(action)) {
+        const direction = typeof item.direction === "string" ? item.direction.toLowerCase() : "";
+        if (!DIRS[direction]) {
+          warnings.push(`${context}: ${action} needs direction up/down/left/right. Treated as idle.`);
+          return { action: "idle", source: item };
+        }
+        return { action, direction, source: item };
+      }
+      if (action === "cast") {
+        const spell = typeof item.spell === "string" ? item.spell.toLowerCase() : "";
+        if (!CONFIG.spells[spell]) {
+          warnings.push(`${context}: unknown spell '${item.spell}'. Treated as idle.`);
+          return { action: "idle", source: item };
+        }
+        if (["firebolt", "blink", "snare"].includes(spell)) {
+          const direction = typeof item.direction === "string" ? item.direction.toLowerCase() : "";
+          if (!DIRS[direction]) {
+            warnings.push(`${context}: ${spell} needs direction up/down/left/right. Treated as idle.`);
+            return { action: "idle", source: item };
+          }
+          return { action, spell, direction, source: item };
+        }
+        return { action, spell, source: item };
+      }
+      return { action, source: item };
+    }
+
+    function normaliseState(raw) {
+      const errors = [];
+      const warnings = [];
+      const state = clone(DEFAULT_STATE);
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { state, errors: ["State must be a JSON object."], warnings };
+      state.round = Number.isInteger(Number(raw.round)) ? Math.max(1, Number(raw.round)) : 1;
+      state.gridSize = Number.isInteger(Number(raw.gridSize)) ? Number(raw.gridSize) : CONFIG.gridSize;
+      if (state.gridSize !== CONFIG.gridSize) {
+        warnings.push(`Only gridSize ${CONFIG.gridSize} is supported in v1. Using ${CONFIG.gridSize}.`);
+        state.gridSize = CONFIG.gridSize;
+      }
+      for (const side of ["A", "B"]) {
+        const f = raw.fighters && raw.fighters[side] ? raw.fighters[side] : null;
+        if (!f) { warnings.push(`State missing fighter ${side}. Using default.`); continue; }
+        const hp = Number(f.hp);
+        state.fighters[side].hp = Number.isFinite(hp) ? Math.max(0, Math.min(CONFIG.maxHp, Math.round(hp))) : CONFIG.maxHp;
+        const pos = f.position || {};
+        const p = { x: Number(pos.x), y: Number(pos.y) };
+        if (Number.isInteger(p.x) && Number.isInteger(p.y) && inBounds(p, state.gridSize)) state.fighters[side].position = p;
+        else warnings.push(`State fighter ${side} has invalid position. Using default.`);
+        state.fighters[side].cooldowns = typeof f.cooldowns === "object" && f.cooldowns ? f.cooldowns : {};
+        state.fighters[side].effects = typeof f.effects === "object" && f.effects ? f.effects : {};
+        state.fighters[side].usedHeal = Boolean(f.usedHeal);
+      }
+      if (samePos(state.fighters.A.position, state.fighters.B.position)) {
+        errors.push("State invalid: fighters cannot start in the same square.");
+      }
+      return { state, errors, warnings };
+    }
+
+    function lineHits(start, dir, target, range) {
+      let p = clone(start);
+      for (let i = 1; i <= range; i++) {
+        p = addDir(p, dir, 1);
+        if (samePos(p, target)) return true;
+      }
+      return false;
+    }
+
+    function tickDownEffects(fighter) {
+      for (const key of Object.keys(fighter.cooldowns || {})) fighter.cooldowns[key] = Math.max(0, Number(fighter.cooldowns[key]) - 1);
+      for (const key of Object.keys(fighter.effects || {})) fighter.effects[key] = Math.max(0, Number(fighter.effects[key]) - 1);
+    }
+
+    function hasEffect(fighter, effect) { return Number(fighter.effects && fighter.effects[effect]) > 0; }
+    function onCooldown(fighter, spell) { return Number(fighter.cooldowns && fighter.cooldowns[spell]) > 0; }
+
+    function simulate(rawA, rawB, rawState) {
+      const pA = normalisePlan(rawA, "Fighter A");
+      const pB = normalisePlan(rawB, "Fighter B");
+      const st = normaliseState(rawState);
+      const errors = [...pA.errors, ...pB.errors, ...st.errors];
+      const warnings = [...pA.warnings, ...pB.warnings, ...st.warnings];
+      if (errors.length) return { ok: false, errors, warnings };
+
+      const state = st.state;
+      const frames = [];
+      const publicEvents = [];
+      const privateEvents = { A: [], B: [] };
+      const names = { A: pA.plan.fighter_name, B: pB.plan.fighter_name };
+      const plans = { A: pA.plan, B: pB.plan };
+
+      frames.push(frameFromState(0, state, ["Initial positions."], names));
+      publicEvents.push(`Round ${state.round} begins. ${names.A} at (${state.fighters.A.position.x},${state.fighters.A.position.y}), ${names.B} at (${state.fighters.B.position.x},${state.fighters.B.position.y}).`);
+
+      for (let tick = 1; tick <= CONFIG.maxTicks; tick++) {
+        const events = [];
+        const damage = { A: [], B: [] };
+        const actions = { A: plans.A.actions[tick], B: plans.B.actions[tick] };
+        const before = { A: clone(state.fighters.A.position), B: clone(state.fighters.B.position) };
+        const tickIntro = `Tick ${tick}: ${names.A} declared ${describeAction(actions.A)}. ${names.B} declared ${describeAction(actions.B)}.`;
+        events.push(tickIntro);
+
+        tickDownEffects(state.fighters.A);
+        tickDownEffects(state.fighters.B);
+
+        // Movement phase: move and dash only. Snared fighters fail movement.
+        const desired = { A: clone(before.A), B: clone(before.B) };
+        for (const side of ["A", "B"]) {
+          const f = state.fighters[side];
+          const action = actions[side];
+          if (f.hp <= 0) continue;
+          if (["move", "dash"].includes(action.action)) {
+            if (hasEffect(f, "snared")) {
+              events.push(`${names[side]} was snared and could not ${action.action}.`);
+              continue;
+            }
+            const steps = action.action === "dash" ? 2 : 1;
+            const target = addDir(before[side], action.direction, steps);
+            if (inBounds(target, state.gridSize)) desired[side] = target;
+            else events.push(`${names[side]} tried to ${action.action} ${action.direction}, but hit the edge of the arena.`);
+          }
+        }
+        const sameTarget = samePos(desired.A, desired.B);
+        const swap = samePos(desired.A, before.B) && samePos(desired.B, before.A);
+        if (sameTarget || swap) {
+          if (!samePos(desired.A, before.A) || !samePos(desired.B, before.B)) events.push(`Collision: both fighters bounced back to their previous squares.`);
+        } else {
+          for (const side of ["A", "B"]) {
+            if (!samePos(desired[side], before[side])) {
+              state.fighters[side].position = desired[side];
+              events.push(`${names[side]} moved to (${desired[side].x},${desired[side].y}).`);
+            }
+          }
+        }
+
+        // Defence setup.
+        for (const side of ["A", "B"]) {
+          const f = state.fighters[side];
+          const action = actions[side];
+          f.temp = { block: false, duck: false };
+          if (f.hp <= 0) continue;
+          if (action.action === "block") { f.temp.block = true; events.push(`${names[side]} braced with block.`); }
+          if (action.action === "duck") { f.temp.duck = true; events.push(`${names[side]} ducked low.`); }
+        }
+
+        // Spell setup effects: shield, blink, heal first; offensive spells after.
+        for (const side of ["A", "B"]) {
+          const f = state.fighters[side];
+          const action = actions[side];
+          if (f.hp <= 0 || action.action !== "cast") continue;
+          const spell = action.spell;
+          if (onCooldown(f, spell)) {
+            events.push(`${names[side]} tried to cast ${spell}, but it is on cooldown for ${f.cooldowns[spell]} more tick(s).`);
+            continue;
+          }
+          if (spell === "shield") {
+            f.effects.shielded = CONFIG.spells.shield.duration;
+            f.cooldowns.shield = CONFIG.spells.shield.cooldown;
+            events.push(`${names[side]} cast shield.`);
+          } else if (spell === "blink") {
+            const target = addDir(f.position, action.direction, CONFIG.spells.blink.range);
+            const other = side === "A" ? state.fighters.B : state.fighters.A;
+            if (inBounds(target, state.gridSize) && !samePos(target, other.position)) {
+              f.position = target;
+              f.cooldowns.blink = CONFIG.spells.blink.cooldown;
+              events.push(`${names[side]} blinked ${action.direction} to (${target.x},${target.y}).`);
+            } else {
+              events.push(`${names[side]} tried to blink ${action.direction}, but the landing square was blocked or outside the arena.`);
+              f.cooldowns.blink = CONFIG.spells.blink.cooldown;
+            }
+          } else if (spell === "heal") {
+            if (f.usedHeal) {
+              events.push(`${names[side]} tried to heal, but heal has already been used this match.`);
+            } else {
+              const oldHp = f.hp;
+              f.hp = Math.min(CONFIG.maxHp, f.hp + CONFIG.spells.heal.amount);
+              f.usedHeal = true;
+              f.cooldowns.heal = CONFIG.spells.heal.cooldown;
+              events.push(`${names[side]} healed from ${oldHp} to ${f.hp} HP.`);
+            }
+          }
+        }
+
+        // Melee and offensive spell targeting.
+        for (const side of ["A", "B"]) {
+          const otherSide = side === "A" ? "B" : "A";
+          const f = state.fighters[side];
+          const other = state.fighters[otherSide];
+          const action = actions[side];
+          if (f.hp <= 0 || other.hp <= 0) continue;
+          if (action.action === "attack") {
+            const target = addDir(f.position, action.direction, 1);
+            if (samePos(target, other.position)) {
+              damage[otherSide].push({ amount: CONFIG.meleeDamage, type: "melee", source: side, label: `${names[side]} melee attack` });
+              events.push(`${names[side]} hit ${names[otherSide]} with melee.`);
+            } else {
+              events.push(`${names[side]} attacked ${action.direction}, but missed.`);
+            }
+          }
+          if (action.action === "cast" && ["firebolt", "snare"].includes(action.spell)) {
+            const spell = action.spell;
+            if (onCooldown(f, spell)) continue;
+            if (spell === "firebolt") {
+              f.cooldowns.firebolt = CONFIG.spells.firebolt.cooldown;
+              if (lineHits(f.position, action.direction, other.position, CONFIG.spells.firebolt.range)) {
+                if (other.temp && other.temp.duck) {
+                  events.push(`${names[side]} cast firebolt ${action.direction}, but ${names[otherSide]} ducked under it.`);
+                } else {
+                  damage[otherSide].push({ amount: CONFIG.spells.firebolt.damage, type: "spell", source: side, label: `${names[side]} firebolt` });
+                  events.push(`${names[side]} struck ${names[otherSide]} with firebolt.`);
+                }
+              } else {
+                events.push(`${names[side]} cast firebolt ${action.direction}, but it missed.`);
+              }
+            }
+            if (spell === "snare") {
+              f.cooldowns.snare = CONFIG.spells.snare.cooldown;
+              if (lineHits(f.position, action.direction, other.position, CONFIG.spells.snare.range)) {
+                other.effects.snared = Math.max(Number(other.effects.snared || 0), 1);
+                events.push(`${names[side]} snared ${names[otherSide]}. ${names[otherSide]} cannot move next tick.`);
+              } else {
+                events.push(`${names[side]} cast snare ${action.direction}, but it missed.`);
+              }
+            }
+          }
+        }
+
+        // Apply damage simultaneously.
+        for (const side of ["A", "B"]) {
+          const f = state.fighters[side];
+          let total = 0;
+          for (const hit of damage[side]) {
+            let amt = hit.amount;
+            if (hit.type === "melee" && f.temp && f.temp.block) amt = Math.ceil(amt / 2);
+            if (hasEffect(f, "shielded")) amt = Math.ceil(amt / 2);
+            total += amt;
+          }
+          if (total > 0) {
+            const oldHp = f.hp;
+            f.hp = Math.max(0, f.hp - total);
+            events.push(`${names[side]} took ${total} damage (${oldHp} → ${f.hp} HP).`);
+          }
+        }
+
+        delete state.fighters.A.temp;
+        delete state.fighters.B.temp;
+
+        const defeated = [];
+        if (state.fighters.A.hp <= 0) defeated.push(names.A);
+        if (state.fighters.B.hp <= 0) defeated.push(names.B);
+        if (defeated.length) events.push(`Defeat check: ${defeated.join(" and ")} defeated.`);
+
+        frames.push(frameFromState(tick, state, events, names));
+        publicEvents.push(...events);
+        for (const side of ["A", "B"]) {
+          const otherSide = side === "A" ? "B" : "A";
+          privateEvents[side].push(...events.map(e => e.replaceAll(names[side], "You").replaceAll(names[otherSide], "Opponent")));
+        }
+        if (state.fighters.A.hp <= 0 || state.fighters.B.hp <= 0) break;
+      }
+
+      const finalState = clone(state);
+      finalState.round = state.round + 1;
+      const result = getResult(finalState, names);
+      publicEvents.push(result.summary);
+
+      return {
+        ok: true,
+        names,
+        warnings,
+        frames,
+        publicEvents,
+        privateEvents,
+        finalState,
+        result,
+        config: CONFIG
+      };
+    }
+
+    function describeAction(a) {
+      if (!a || a.action === "idle") return "idle";
+      if (["move", "dash", "attack"].includes(a.action)) return `${a.action} ${a.direction}`;
+      if (a.action === "cast") return `cast ${a.spell}${a.direction ? " " + a.direction : ""}`;
+      return a.action;
+    }
+
+    function frameFromState(tick, state, events, names) {
+      return {
+        tick,
+        A: clone(state.fighters.A),
+        B: clone(state.fighters.B),
+        events: clone(events),
+        names: clone(names)
+      };
+    }
+
+    function getResult(state, names) {
+      const a = state.fighters.A.hp;
+      const b = state.fighters.B.hp;
+      if (a <= 0 && b <= 0) return { winner: "draw", summary: "Result: draw. Both fighters were destroyed." };
+      if (a <= 0) return { winner: "B", summary: `Result: ${names.B} wins. ${names.A} was destroyed.` };
+      if (b <= 0) return { winner: "A", summary: `Result: ${names.A} wins. ${names.B} was destroyed.` };
+      if (a > b) return { winner: "A_leading", summary: `Round over: ${names.A} leads on HP (${a} vs ${b}). Match continues.` };
+      if (b > a) return { winner: "B_leading", summary: `Round over: ${names.B} leads on HP (${b} vs ${a}). Match continues.` };
+      return { winner: "even", summary: `Round over: both fighters are tied on HP (${a}). Match continues.` };
+    }
+
+    function renderFrame(index) {
+      if (!lastResult || !lastResult.ok) {
+        renderEmptyGrid(CONFIG.gridSize);
+        return;
+      }
+      currentFrame = Math.max(0, Math.min(index, lastResult.frames.length - 1));
+      const frame = lastResult.frames[currentFrame];
+      renderGrid(CONFIG.gridSize, frame.A.position, frame.B.position);
+      els.tickLabel.textContent = `Tick ${frame.tick} of ${lastResult.frames.length - 1}`;
+      els.nameA.textContent = lastResult.names.A;
+      els.nameB.textContent = lastResult.names.B;
+      els.hpA.textContent = frame.A.hp;
+      els.hpB.textContent = frame.B.hp;
+      els.hpBarA.style.width = `${Math.max(0, frame.A.hp)}%`;
+      els.hpBarB.style.width = `${Math.max(0, frame.B.hp)}%`;
+      els.hpBarA.style.background = hpColor(frame.A.hp);
+      els.hpBarB.style.background = hpColor(frame.B.hp);
+    }
+
+    function renderGrid(size, posA, posB) {
+      els.grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+      els.grid.innerHTML = "";
+      const center = Math.floor(size / 2);
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const cell = document.createElement("div");
+          cell.className = "cell" + (x === center && y === center ? " center" : "");
+          const isA = posA && posA.x === x && posA.y === y;
+          const isB = posB && posB.x === x && posB.y === y;
+          if (isA || isB) {
+            const token = document.createElement("div");
+            token.className = "token " + (isA && isB ? "both" : isA ? "a" : "b");
+            token.textContent = isA && isB ? "AB" : isA ? "A" : "B";
+            cell.appendChild(token);
+          }
+          els.grid.appendChild(cell);
+        }
+      }
+    }
+
+    function renderEmptyGrid(size) { renderGrid(size, DEFAULT_STATE.fighters.A.position, DEFAULT_STATE.fighters.B.position); }
+
+    function renderResult(result) {
+      if (!result.ok) {
+        els.validationCard.style.display = "block";
+        els.validationOutput.className = "eventList errors";
+        els.validationOutput.textContent = [...result.errors, ...result.warnings].join("\n");
+        els.resultLine.textContent = "Could not simulate. Fix validation errors first.";
+        setCopyButtons(false);
+        return;
+      }
+      els.validationCard.style.display = result.warnings.length ? "block" : "none";
+      els.validationOutput.className = "eventList";
+      els.validationOutput.textContent = result.warnings.length ? result.warnings.join("\n") : "No warnings.";
+      els.battleLog.textContent = result.publicEvents.join("\n");
+      els.resultLine.textContent = result.result.summary;
+      setCopyButtons(true);
+      document.getElementById("carryState").disabled = false;
+      renderFrame(0);
+    }
+
+    function setCopyButtons(enabled) {
+      document.getElementById("copyA").disabled = !enabled;
+      document.getElementById("copyB").disabled = !enabled;
+      document.getElementById("copyPublic").disabled = !enabled;
+    }
+
+    function buildBasePrompt(side = "A", includeLog = false) {
+      const opponent = side === "A" ? "B" : "A";
+      const state = lastResult && lastResult.ok ? lastResult.finalState : parseJson(els.stateText.value, "state").value;
+      const prior = includeLog && lastResult && lastResult.ok ? `\n\nPREVIOUS ROUND LOG FOR YOU:\n${lastResult.privateEvents[side].join("\n")}\n\nPUBLIC RESULT:\n${lastResult.result.summary}` : "";
+      return `You are Fighter ${side} in LLM Gladiator Arena. Your goal is to destroy Fighter ${opponent}.\n\nReturn ONLY valid JSON. Do not use markdown. Do not explain yourself outside the JSON.\n\nSchema:\n{\n  "schema": 1,\n  "fighter_name": "short name",\n  "strategy": "one sentence",\n  "actions": [\n    { "tick": 1, "action": "move", "direction": "right" },\n    { "tick": 2, "action": "cast", "spell": "firebolt", "direction": "right" }\n  ]\n}\n\nYou must provide exactly ${CONFIG.maxTicks} ticks, numbered 1-${CONFIG.maxTicks}.\n\nAllowed actions:\n- move: direction up/down/left/right, moves 1 square\n- dash: direction up/down/left/right, moves 2 squares\n- attack: direction up/down/left/right, hits adjacent square for ${CONFIG.meleeDamage} melee damage\n- block: halves incoming melee damage this tick\n- duck: avoids firebolt this tick\n- cast firebolt: direction required, line range ${CONFIG.spells.firebolt.range}, damage ${CONFIG.spells.firebolt.damage}, cooldown ${CONFIG.spells.firebolt.cooldown}\n- cast blink: direction required, teleport ${CONFIG.spells.blink.range} squares, cooldown ${CONFIG.spells.blink.cooldown}\n- cast shield: halves all incoming damage this tick and next tick, cooldown ${CONFIG.spells.shield.cooldown}\n- cast snare: direction required, line range ${CONFIG.spells.snare.range}, opponent cannot move next tick, cooldown ${CONFIG.spells.snare.cooldown}\n- cast heal: restores ${CONFIG.spells.heal.amount} HP, once per match\n- idle\n\nRules summary:\nGrid is ${CONFIG.gridSize}x${CONFIG.gridSize}. Coordinates start at top-left (0,0). Tick order is movement first, then defence/spells/attacks, then damage. If both fighters try to enter the same square or swap squares, both bounce back. Invalid actions become idle. No randomness.\n\nCurrent state for next round:\n${JSON.stringify(state, null, 2)}${prior}\n\nWrite Fighter ${side}'s next plan now.`;
+    }
+
+    async function copyText(text, label) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
+        else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        els.copyStatus.textContent = `Copied ${label}.`;
+        els.copyStatus.className = "small copied";
+        setTimeout(() => els.copyStatus.textContent = "", 2200);
+      } catch (err) {
+        els.copyStatus.textContent = "Copy failed. Select the text manually.";
+      }
+    }
+
+    function doSimulate() {
+      stopPlay();
+      const a = parseJson(els.planA.value, "Fighter A plan");
+      const b = parseJson(els.planB.value, "Fighter B plan");
+      const s = parseJson(els.stateText.value, "Round state");
+      const errors = [...a.errors, ...b.errors, ...s.errors];
+      if (errors.length) {
+        lastResult = { ok: false, errors, warnings: [] };
+        renderResult(lastResult);
+        return;
+      }
+      if (s.value && Number(els.roundInput.value)) s.value.round = Number(els.roundInput.value);
+      lastResult = simulate(a.value, b.value, s.value);
+      renderResult(lastResult);
+    }
+
+    function stopPlay() {
+      if (playTimer) clearInterval(playTimer);
+      playTimer = null;
+      document.getElementById("playPause").textContent = "Play";
+    }
+
+    function init() {
+      els.planA.value = pretty(SAMPLE_A);
+      els.planB.value = pretty(SAMPLE_B);
+      els.stateText.value = pretty(DEFAULT_STATE);
+      els.basePrompt.textContent = buildBasePrompt("A", false);
+      renderEmptyGrid(CONFIG.gridSize);
+
+      document.getElementById("sampleA").onclick = () => els.planA.value = pretty(SAMPLE_A);
+      document.getElementById("sampleB").onclick = () => els.planB.value = pretty(SAMPLE_B);
+      document.getElementById("clearA").onclick = () => els.planA.value = "";
+      document.getElementById("clearB").onclick = () => els.planB.value = "";
+      document.getElementById("resetState").onclick = () => { stopPlay(); els.stateText.value = pretty(DEFAULT_STATE); els.roundInput.value = 1; document.getElementById("carryState").disabled = true; lastResult = null; renderEmptyGrid(CONFIG.gridSize); els.battleLog.textContent = "No events yet."; els.resultLine.textContent = "Simulate to begin."; els.tickLabel.textContent = "No battle yet"; setCopyButtons(false); };
+      document.getElementById("simulate").onclick = doSimulate;
+      document.getElementById("carryState").onclick = () => {
+        if (!lastResult || !lastResult.ok) return;
+        els.stateText.value = pretty(lastResult.finalState);
+        els.roundInput.value = lastResult.finalState.round;
+        els.planA.value = "";
+        els.planB.value = "";
+      };
+      document.getElementById("prevTick").onclick = () => { stopPlay(); if (lastResult && lastResult.ok) renderFrame(currentFrame - 1); };
+      document.getElementById("nextTick").onclick = () => { stopPlay(); if (lastResult && lastResult.ok) renderFrame(currentFrame + 1); };
+      document.getElementById("toStart").onclick = () => { stopPlay(); if (lastResult && lastResult.ok) renderFrame(0); };
+      document.getElementById("toEnd").onclick = () => { stopPlay(); if (lastResult && lastResult.ok) renderFrame(lastResult.frames.length - 1); };
+      document.getElementById("playPause").onclick = () => {
+        if (!lastResult || !lastResult.ok) return;
+        if (playTimer) { stopPlay(); return; }
+        document.getElementById("playPause").textContent = "Pause";
+        playTimer = setInterval(() => {
+          if (currentFrame >= lastResult.frames.length - 1) { stopPlay(); return; }
+          renderFrame(currentFrame + 1);
+        }, 850);
+      };
+      document.getElementById("copyA").onclick = () => copyText(buildBasePrompt("A", true), "Fighter A prompt/log");
+      document.getElementById("copyB").onclick = () => copyText(buildBasePrompt("B", true), "Fighter B prompt/log");
+      document.getElementById("copyPublic").onclick = () => copyText(lastResult && lastResult.ok ? lastResult.publicEvents.join("\n") : "", "public log");
+      document.getElementById("copyBasePrompt").onclick = () => copyText(buildBasePrompt("A", false), "base prompt");
+      els.roundInput.oninput = () => {
+        const parsed = parseJson(els.stateText.value, "state");
+        if (parsed.value) {
+          parsed.value.round = Number(els.roundInput.value) || 1;
+          els.stateText.value = pretty(parsed.value);
+        }
+      };
+    }
+
+    init();
+  </script>
+</body>
+</html>

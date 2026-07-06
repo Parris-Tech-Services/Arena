@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-gladiator-arena.local/schemas/plan-v1.schema.json",
+  "title": "Gladiator plan v1",
+  "type": "object",
+  "required": ["schema", "fighter_name", "actions"],
+  "properties": {
+    "schema": { "const": 1 },
+    "fighter_name": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "strategy": { "type": "string" },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tick", "action"],
+        "properties": {
+          "tick": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "action": { "enum": ["move", "dash", "attack", "block", "duck", "cast", "idle"] },
+          "direction": { "enum": ["up", "down", "left", "right"] },
+          "spell": { "enum": ["firebolt", "blink", "shield", "snare", "heal"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
