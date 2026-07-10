@@ -1,4 +1,6 @@
-# Technical and product findings
+# Technical and product findings (v1 prototype audit)
+
+> **Status:** this is the audit of the original single-file prototype, kept for provenance. The v0.2.0 migration resolved findings 1–7, 9, and 10 (see `PLATFORM_STATUS.md` and `RULES.md`). The code map in the appendix describes `legacy/prototype-v1/llm-gladiator-arena.html`.
 
 ## Executive assessment
 
@@ -52,9 +54,9 @@ Cooldowns and effects decrement at the beginning of each tick. Shield is then ap
 
 The workspace contains multiple HTML and ZIP copies. There is no manifest declaring which file is authoritative or a repeatable release process to generate the others. AI tools may edit the wrong copy.
 
-### 8. Text encoding is visibly damaged
+### 8. ~~Text encoding is visibly damaged~~ (withdrawn)
 
-The current HTML contains mojibake such as `7Ã—7`, `â†’`, and curly-quote sequences. Normalize the source as UTF-8 and add an encoding check before creating further copies.
+Withdrawn after verification: a byte-level check of every HTML copy found no damaged UTF-8 sequences. The apparent mojibake was an artifact of viewing the file with the wrong decoding.
 
 ### 9. Browser state is fragile
 
@@ -89,7 +91,7 @@ With those foundations, the project can become more than a manual duel viewer:
 
 ## Appendix — code map of the current prototype
 
-Line numbers refer to `llm-gladiator-arena.html` as of this audit. This is the fastest way for a human or coding agent to orient before an edit.
+Line numbers refer to `legacy/prototype-v1/llm-gladiator-arena.html` as of this audit. This is the fastest way for a human or coding agent to orient before an edit.
 
 | Lines | Section | Role |
 |---|---|---|

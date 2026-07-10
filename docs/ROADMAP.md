@@ -8,7 +8,6 @@ Each phase should leave the game runnable. Separate structural migration from ne
 
 - Declare the root HTML as the temporary source of truth.
 - Remove or relocate duplicate copies; generate ZIPs only during release.
-- Normalize the source to UTF-8 and repair damaged glyphs.
 - Record representative input/result fixtures from the current engine.
 
 **Complete when:** there is one editable source and documented release artifacts.

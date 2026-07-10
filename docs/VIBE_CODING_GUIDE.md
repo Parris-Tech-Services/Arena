@@ -39,22 +39,9 @@ Avoid requests like “add poison and make it good.” Prefer:
 - Do not duplicate rule numbers in UI copy or prompts; generate them from the ruleset.
 - Do not edit generated release files directly.
 
-## Repository instructions worth adding for coding agents
+## Repository instructions for coding agents
 
-Create an `AGENTS.md` once the source migration begins. It should contain only stable, enforceable facts:
-
-```md
-# Agent instructions
-- Canonical source is `src/`; `dist/` and standalone HTML are generated.
-- The engine must not import browser or provider modules.
-- Gameplay changes require scenario tests and a ruleset version decision.
-- Run `npm test`, `npm run typecheck`, and `npm run build` before completion.
-- Preserve deterministic output; never use ambient randomness or time in the engine.
-- Update schemas and examples whenever a contract changes.
-- Do not place secrets or provider keys in client code.
-```
-
-Keep task-specific desires out of `AGENTS.md`; overly long instructions consume context and eventually contradict the code.
+`AGENTS.md` (and the equivalent `CLAUDE.md`) exist at the repo root and contain only stable, enforceable facts: canonical source location, engine purity rules, verification commands, and versioning obligations. Keep task-specific desires out of them; overly long instructions consume context and eventually contradict the code. Update them in the same change whenever one of those facts changes.
 
 ## Prompt template for a feature
 
@@ -128,12 +115,12 @@ A change is not done merely because the browser looks right. It is done when:
 
 ## High-leverage context files
 
-After migration, keep these concise and current. They dramatically improve agent output:
+Keep these concise and current. They dramatically improve agent output:
 
-- `AGENTS.md`: invariant repo instructions;
+- `AGENTS.md` / `CLAUDE.md`: invariant repo instructions;
 - `docs/RULES.md`: canonical phase/timing policies and worked examples;
-- JSON Schemas: machine-readable contracts;
-- `tests/fixtures/`: tiny reproducible battles;
-- `docs/DECISIONS/`: short architecture decisions for choices that should not be relitigated;
+- `schemas/`: machine-readable contracts;
+- scenario tests in `tests/`: tiny reproducible battles;
+- `docs/decisions/`: short architecture decisions for choices that should not be relitigated;
 - per-module READMEs only where the ownership is not obvious.
 

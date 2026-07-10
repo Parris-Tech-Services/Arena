@@ -15,12 +15,15 @@ Use `npm.cmd test`, `npm.cmd run typecheck`, and `npm.cmd run build` before comp
 
 ## Documentation map
 
-- [`docs/FINDINGS.md`](./docs/FINDINGS.md) — audit of the current prototype, risks, and opportunities; its appendix is a line-numbered map of the current single-file implementation.
+- [`docs/RULES.md`](./docs/RULES.md) — the canonical ruleset: tick phases, timing conventions, edge-case policies.
+- [`docs/PLATFORM_STATUS.md`](./docs/PLATFORM_STATUS.md) — what is implemented, with the command reference.
 - [`docs/TARGET_ARCHITECTURE.md`](./docs/TARGET_ARCHITECTURE.md) — recommended module boundaries and data flow.
+- [`docs/decisions/`](./docs/decisions) — architecture decision records.
 - [`docs/VIBE_CODING_GUIDE.md`](./docs/VIBE_CODING_GUIDE.md) — the working agreement and prompt recipe for AI-assisted changes.
-- [`docs/ROADMAP.md`](./docs/ROADMAP.md) — an ordered migration plan with completion criteria.
+- [`docs/ROADMAP.md`](./docs/ROADMAP.md) — the ordered migration plan with completion criteria.
+- [`docs/FINDINGS.md`](./docs/FINDINGS.md) — historical audit of the v1 prototype (mostly resolved; kept for provenance).
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — a small, repeatable change workflow.
-- [`CLAUDE.md`](./CLAUDE.md) — invariants and verification steps for coding agents (valid for the current single-file phase).
+- [`AGENTS.md`](./AGENTS.md) / [`CLAUDE.md`](./CLAUDE.md) — invariants and verification steps for coding agents.
 
 ## Architecture status
 
