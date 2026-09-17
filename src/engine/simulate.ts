@@ -67,9 +67,12 @@ function resolveMovement(tick: number, state: MatchStateV1, actions: Record<Figh
 function resolveUtility(tick: number, state: MatchStateV1, actions: Record<FighterId, PlannedAction>, events: CombatEvent[]): void {
   const blinkIntents: Partial<Record<FighterId, ReturnType<typeof addDirection>>> = {};
   for (const side of ["A", "B"] as const) {
-    const fighter = state.fighters[side], action = actions[side]; if (action.action !== "cast" || !action.spell || cooldown(fighter, action.spell)) continue;
+    const fighter = state.fighters[side], action = actions[side];
+    if (action.action !== "cast" || !action.spell) continue;
+    if (action.spell === "heal" && fighter.usedHeal) { events.push(event(tick, "utility", "spell-failed", side, undefined, { spell: "heal", reason: "already-used" })); continue; }
+    if (cooldown(fighter, action.spell)) continue;
     if (action.spell === "shield") { fighter.effects.shielded = RULES.spells.shield.duration; fighter.cooldowns.shield = RULES.spells.shield.cooldown; events.push(event(tick, "utility", "shield-applied", side)); }
-    if (action.spell === "heal") { if (!fighter.usedHeal) { const before = fighter.hp; fighter.hp = Math.min(RULES.maxHp, fighter.hp + RULES.spells.heal.amount); fighter.usedHeal = true; fighter.cooldowns.heal = RULES.spells.heal.cooldown; events.push(event(tick, "utility", "healed", side, side, { before, after: fighter.hp })); } else events.push(event(tick, "utility", "spell-failed", side, undefined, { spell: "heal", reason: "already-used" })); }
+    if (action.spell === "heal") { const before = fighter.hp; fighter.hp = Math.min(RULES.maxHp, fighter.hp + RULES.spells.heal.amount); fighter.usedHeal = true; fighter.cooldowns.heal = RULES.spells.heal.cooldown; events.push(event(tick, "utility", "healed", side, side, { before, after: fighter.hp })); }
     if (action.spell === "blink") { fighter.cooldowns.blink = RULES.spells.blink.cooldown; blinkIntents[side] = addDirection(fighter.position, action.direction!, RULES.spells.blink.range); }
   }
   for (const side of ["A", "B"] as const) {
